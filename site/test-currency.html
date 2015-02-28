@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>cross domain microservices with token authentication</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
+	<script type="text/javascript" src="js/jquery-ui-1.11.2.min.js"></script>
+	
+
+</head>
+
+<body>
+	<script type="text/javascript">
+	var token = "";
+	
+	function doLogin(){
+		
+		var username = $("#username").val();
+		var password = $("#password").val();
+		
+		console.log("loggin in with "+username + "/" + password);
+		
+		var request = $.ajax({
+		    type: 'GET',
+		    url: 'http://auth.svc.local/token/generate?username='+username+'&password='+password,
+		    dataType: "json",
+		});
+		
+		request.done(function(response){
+		    console.log(response);
+		    if(response.status == "OK"){
+		    	token = response.token;
+		    	console.log("logged in, token:" + token);
+				$("#login").css("display","none");
+				$("#currency").css("display","block");
+
+		    }else{
+		    	console.log("error loggin in");
+		    }
+		});
+	}
+	
+	function doConvert(){
+		var from = $("#from").val();
+		var to = $("#to").val();
+
+		var request = $.ajax({
+		    type: 'GET',
+		    headers: {
+		        'Authentication':'Bearer '+token,
+		    },
+		    url: 'http://currency.svc.local/convert/'+from+'/'+to,
+		    dataType: "json",
+		});
+		
+		request.done(function(response){
+		    console.log(response);
+	    	console.log("converion ok, value:" + response.value);
+			$("#result").val(response.value);
+		});
+	}
+	
+		$(function() {
+			
+			$("#loginButton").on("click", function(){
+				doLogin();
+			});
+			
+			$("#convertButton").on("click", function(){
+				doConvert();
+			});
+			
+		});
+	</script>
+	
+<div id="login">
+	username: <input type="text" id="username" value="pippo"/><br/>
+	password: <input type="text" id="password" value="pluto"/><br/>
+	<input type="button" id="loginButton" value="login"/>
+</div>
+
+<div id="currency" style="display:none;">
+	from: <input type="text" id="from" value="USD"/><br/>
+	to: <input type="text" id="to" value="EUR"/><br/>
+	<input type="button" id="convertButton" value="convert"/><br/>
+	result: <input type="text" id="result" value=""/><br/>
+</div>
+</body>
+</html>
